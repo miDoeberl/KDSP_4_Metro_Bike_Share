@@ -1,4 +1,5 @@
 import json
+import pandas as pd
 import urllib.request
 from datetime import datetime
 
@@ -18,7 +19,18 @@ class StationStatusHandler:
         req = urllib.request.Request(self._url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req) as url:
             data = json.loads(url.read().decode())
-            self._station_states = data['features']
+            return data['features']
+
+    def _json_to_dataframe(self, data):
+        """
+        Creates a pandas DataFrame from the downloaded json data
+        """
+        cleaned_data = []
+        for row in data:
+            row["properties"]["location"] = list(reversed(row["geometry"]["coordinates"]))
+            cleaned_data.append(row["properties"])
+        frame = pd.DataFrame(cleaned_data)
+        return frame
 
     def get_station_states(self, force_refresh=False):
         """
@@ -29,6 +41,6 @@ class StationStatusHandler:
                 or self._station_states is None \
                 or force_refresh:
             self._last_update = current_time
-            self._station_states = self._load_station_states()
+            self._station_states = self._json_to_dataframe(self._load_station_states())
 
         return self._station_states

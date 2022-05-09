@@ -3,8 +3,6 @@ import osmnx as ox
 import pathlib
 import os
 
-from sklearn.utils import shuffle
-
 # ox.config(use_cache=True, log_console=True)
 # G = ox.graph_from_place('Schmidmühlen, BY, Germany', network_type='drive')
 # print(G.__dir__())
@@ -41,14 +39,15 @@ class MapLoader():
         return self.network_graph
 
     def _load_map_from_overpass(self):
-        self.network_graph = ox.graph_from_place(self.place, network_type=self.network_type)
+        self.network_graph = ox.graph_from_place(self.place, network_type=self.network_type, simplify=False)
 
     def _cache_map(self):
         if not os.path.isdir(self.cache_dir_path):
             os.mkdir(self.cache_dir_path)
 
         if self.network_graph is not None:
-            file_path = self.cache_dir_path / ("map_cache_" + datetime.now().strftime(self.date_str_format) + ".graphml")
+            location_prefix = self.place.replace(" ", "").replace(",", "_")
+            file_path = self.cache_dir_path / ("map_cache_" + location_prefix + "_" + datetime.now().strftime(self.date_str_format) + ".graphml")
             ox.save_graphml(self.network_graph, file_path)
 
     def _possibly_get_cached_map(self):
@@ -61,6 +60,7 @@ class MapLoader():
         closest_date = datetime.fromordinal(1)
         for filename in cached_maps:
             date_str = filename.replace("map_cache_", "")
+            date_str = date_str.replace(self.place.replace(" ", "").replace(",", "_") + "_", "")
             date_str = date_str.replace(".graphml", "")
             try:
                 date = datetime.strptime(date_str, self.date_str_format)
