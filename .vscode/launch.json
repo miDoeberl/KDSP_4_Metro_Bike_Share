@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Main",
             "type": "python",
             "request": "launch",
-            "program": "/home/michael/Desktop/Studium/6. Semester/KDSP/Project/task_2/main.py",
+            "program": "/home/michael/Desktop/Studium/6. Semester/KDSP/Project/KDSP_4_Metro_Bike_Share/main.py",
             "console": "integratedTerminal",
             "justMyCode": true
         }

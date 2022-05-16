@@ -3,26 +3,16 @@ import osmnx as ox
 import pathlib
 import os
 
-# ox.config(use_cache=True, log_console=True)
-# G = ox.graph_from_place('Schmidmühlen, BY, Germany', network_type='drive')
-# print(G.__dir__())
-# orig = list(G)[0]
-# dest = list(G)[-1]
-# route = ox.shortest_path(G, orig, dest)
-# fig, ax = ox.plot_graph_route(G, route, route_linewidth=6, node_size=0, bgcolor='k')
-
-
 class MapLoader():
 
-    def __init__(self):
+    def __init__(self, __config):
         ox.config(use_cache=True, log_console=True)
         self.cache_directory = "data"
         self.cache_dir_path = pathlib.Path(__file__).parent / self.cache_directory
         self.date_str_format = "%m-%d-%Y-%H-%M-%S"
-        self.map_update_time = 86400  # [s]
+        self.map_update_time = int(__config["MAP"]["updateTime"])
 
-        self.place = "Los Angeles, CA, USA"
-        #self.place = "Schmidmühlen, BY, Germany"
+        self.place = __config["MAP"]["place"]
         self.network_type = "drive"
         self.network_graph = None
 
