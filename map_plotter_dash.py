@@ -2,7 +2,7 @@ import osmnx as ox
 import dash
 import dash_leaflet as dl
 import dash_leaflet.express as dlx
-import dash_html_components as html
+from dash import html
 import pathlib
 import route_finder
 
@@ -19,45 +19,38 @@ route_state = SELECT_START_POINT
 class MapPlotter:
 
     def __init__(self, __config):
-        self.config = __config
+        global config
+        config = __config
         self.cache_directory = "data"
         self.cache_dir_path = pathlib.Path(__file__).parent / self.cache_directory
 
-    def plot_map(self, map, stations):
-        global app
-        global __map
+    def plot_map(self, map, station_loader):
+        global app, __map, __station_loader
         __map = map
-
-        dummy_orig = list(map)[0]
-        dummy_dest = list(map)[-1]
-        route = ox.shortest_path(map, dummy_orig, dummy_dest)
-        locations = []
-        for node_id in route:
-            node = map.nodes[node_id]
-            locations.append([node["y"], node["x"]])
-
-        route_line = dl.Polyline(positions=locations)
+        __station_loader = station_loader
 
         dicts = []
-        for station in stations.iterrows():
+        station_markers = []
+        for station in station_loader.get_station_states().iterrows():
             name_string = station[1]["name"]
             location_string = station[1]["addressStreet"]
             bikes_available_classic = station[1]["classicBikesAvailable"]
             bikes_available_smart = station[1]["smartBikesAvailable"]
             bikes_available_electric = station[1]["electricBikesAvailable"]
 
-            popup_html = name_string + "<br>" \
-                + location_string + "<br>" \
-                + "Classic bikes: " + str(bikes_available_classic) + "<br>" \
-                + "Smart bikes: " + str(bikes_available_smart) + "<br>" \
-                + "Electric bikes: " + str(bikes_available_electric)
+            popup_html = [html.B(name_string),
+                         html.B(location_string),
+                         "Classic bikes: " + str(bikes_available_classic),
+                         "Smart bikes: " + str(bikes_available_smart),
+                         "Electric bikes: " + str(bikes_available_electric)]
 
             dicts.append(dict(popup=popup_html, lat=station[1]["location"][0], lon=station[1]["location"][1]))
+            station_markers.append(dl.CircleMarker(center=[station[1]["location"][0], station[1]["location"][1]], radius=4, children=dl.Popup([html.Div(line) for line in popup_html])))
         cluster = dl.GeoJSON(id="markers", data=dlx.dicts_to_geojson(dicts), cluster=True, zoomToBoundsOnClick=True)
 
-        city_center = ox.geocode_to_gdf(self.config["MAP"]["place"]).centroid
+        city_center = ox.geocode_to_gdf(config["MAP"]["place"]).centroid
 
-        map = dl.Map(children=[dl.TileLayer(), dl.LayerGroup(id="container", children=[]), cluster, route_line],
+        map = dl.Map(children=[dl.TileLayer(), dl.LayerGroup(id="container", children=station_markers)],
                             id="map",
                             center=[city_center.y[0], city_center.x[0]],
                             zoom=11,
@@ -74,11 +67,23 @@ class MapPlotter:
     def add_marker(click_lat_lng, children):
         global route_state, start_location, end_location
 
-        children.append(dl.CircleMarker(center=click_lat_lng))
+        children.append(dl.Marker(position=click_lat_lng))
         
         if route_state == SELECT_START_POINT:
             start_location = click_lat_lng
             route_state = SELECT_END_POINT
+
+            bike_station_locations = route_finder.find_closest_bike_stations(__map, start_location, __station_loader.get_station_states(), config)
+            for station in bike_station_locations:
+                tooltip = ""
+                for index, child in enumerate(children):
+                    if type(child) == dict and child["type"] == "CircleMarker" and child["props"]["center"] == [station[1].latitude, station[1].longitude]:
+                        tooltip = child["props"]["children"]
+                        travel_time = station[0] * 1000 / (float(config["STATIONS"]["walkingVelocity"]) / 3.6) / 60
+                        tooltip["props"]["children"].append(html.Div(f"Estimated travel time: {travel_time:.0f} - {travel_time * 2:.1f} min."))
+                        break
+                children.append(dl.CircleMarker(center=[station[1].latitude, station[1].longitude], color="lime", opacity=1, fillOpacity=1, radius=6, children=tooltip))
+
             return children
         elif route_state == SELECT_END_POINT:
             end_location = click_lat_lng

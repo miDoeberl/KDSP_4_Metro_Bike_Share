@@ -11,5 +11,4 @@ if __name__ == "__main__":
     __bike_state_loader = bike_stations.StationStatusHandler()
 
     map_graph = __map_loader.get_map()
-    stations = __bike_state_loader.get_station_states()
-    __map_plotter.plot_map(map_graph, stations)
+    __map_plotter.plot_map(map_graph, __bike_state_loader)
