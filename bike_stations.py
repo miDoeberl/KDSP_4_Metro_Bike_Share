@@ -5,6 +5,9 @@ from datetime import datetime
 
 
 class StationStatusHandler:
+    """
+    Provides bixi-bike station information through self.get_station_states(force_refresh=False)
+    """
 
     def __init__(self):
         self._url = "https://bikeshare.metro.net/stations/json/"

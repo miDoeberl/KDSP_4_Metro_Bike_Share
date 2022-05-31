@@ -3,6 +3,7 @@ import osmnx as ox
 import pathlib
 import os
 
+
 class MapLoader():
 
     def __init__(self, __config):
@@ -13,7 +14,7 @@ class MapLoader():
         self.map_update_time = int(__config["MAP"]["updateTime"])
 
         self.place = __config["MAP"]["place"]
-        self.network_type = "drive"
+        self.network_type = "bike" # "drive", "bike", "walk"
         self.network_graph = None
 
     def get_map(self):
@@ -37,7 +38,8 @@ class MapLoader():
 
         if self.network_graph is not None:
             location_prefix = self.place.replace(" ", "").replace(",", "_")
-            file_path = self.cache_dir_path / ("map_cache_" + location_prefix + "_" + datetime.now().strftime(self.date_str_format) + ".graphml")
+            file_path = self.cache_dir_path / ("map_cache_" + location_prefix + "_" +
+                                               datetime.now().strftime(self.date_str_format) + ".graphml")
             ox.save_graphml(self.network_graph, file_path)
 
     def _possibly_get_cached_map(self):

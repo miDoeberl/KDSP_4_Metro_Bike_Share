@@ -8,7 +8,7 @@ from math import radians, cos, sin, asin, sqrt
 def get_shortest_route(map, start_location, end_location):
     start_node = ox.get_nearest_node(map, tuple(start_location), method='haversine')
     end_node = ox.get_nearest_node(map, tuple(end_location), method='haversine')
-    route = ox.shortest_path(map, start_node, end_node)
+    route = ox.shortest_path(map, start_node, end_node, cpus=None)
     locations = []
     for node_id in route:
         node = map.nodes[node_id]
@@ -17,7 +17,7 @@ def get_shortest_route(map, start_location, end_location):
     return locations
 
 
-def find_closest_bike_stations(map, location, stations, config):
+def find_closest_bike_stations(location, stations, config, return_bikes = False):
     distances = list()
     for entry in stations.iterrows():
         distances.append(haversine(location[0], location[1], entry[1].latitude, entry[1].longitude))
@@ -26,9 +26,14 @@ def find_closest_bike_stations(map, location, stations, config):
     ordered_stations = []
     for index in distance_order:
         station = stations.iloc[index]
-        if station.bikesAvailable >= int(config["STATIONS"]["minimumBikesAvailable"]) \
-                and station.kioskPublicStatus == "Active":
-            ordered_stations.append((distances[index], station))
+        if not return_bikes:
+            if station.bikesAvailable >= int(config["STATIONS"]["minimumBikesAvailable"]) \
+                    and station.kioskPublicStatus == "Active":
+                ordered_stations.append((distances[index], station))
+        elif return_bikes:
+            if station.docksAvailable >= int(config["STATIONS"]["minimumBikesAvailable"]) \
+                    and station.kioskPublicStatus == "Active":
+                ordered_stations.append((distances[index], station))
 
     return ordered_stations[:int(config["STATIONS"]["closestBikeStations"])]
 
