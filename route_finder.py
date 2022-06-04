@@ -6,8 +6,8 @@ from math import radians, cos, sin, asin, sqrt
 
 
 def get_shortest_route(map, start_location, end_location):
-    start_node = ox.get_nearest_node(map, tuple(start_location), method='haversine')
-    end_node = ox.get_nearest_node(map, tuple(end_location), method='haversine')
+    start_node, end_node = ox.distance.nearest_nodes(map, *list(zip(reversed(start_location), reversed(end_location))))
+
     route = ox.shortest_path(map, start_node, end_node, cpus=None)
     locations = []
     for node_id in route:

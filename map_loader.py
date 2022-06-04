@@ -2,7 +2,7 @@ from datetime import datetime
 import osmnx as ox
 import pathlib
 import os
-
+import pickle
 
 class MapLoader():
 
@@ -39,8 +39,10 @@ class MapLoader():
         if self.network_graph is not None:
             location_prefix = self.place.replace(" ", "").replace(",", "_")
             file_path = self.cache_dir_path / ("map_cache_" + location_prefix + "_" +
-                                               datetime.now().strftime(self.date_str_format) + ".graphml")
-            ox.save_graphml(self.network_graph, file_path)
+                                               datetime.now().strftime(self.date_str_format) + ".pickle")
+            #ox.save_graphml(self.network_graph, file_path)
+            with open(file_path, "wb") as file:
+                pickle.dump(self.network_graph, file)
 
     def _possibly_get_cached_map(self):
         if not os.path.isdir(self.cache_dir_path):
@@ -53,7 +55,7 @@ class MapLoader():
         for filename in cached_maps:
             date_str = filename.replace("map_cache_", "")
             date_str = date_str.replace(self.place.replace(" ", "").replace(",", "_") + "_", "")
-            date_str = date_str.replace(".graphml", "")
+            date_str = date_str.replace(".pickle", "")
             try:
                 date = datetime.strptime(date_str, self.date_str_format)
             except ValueError:
@@ -66,7 +68,11 @@ class MapLoader():
 
         map = None
         if closest_filename is not None and (datetime.now() - closest_date).seconds <= self.map_update_time:
-            map = ox.load_graphml(str(self.cache_dir_path / closest_filename))
+            
+            # map = ox.load_graphml(str(self.cache_dir_path / closest_filename))
+            
+            with open(str(self.cache_dir_path / closest_filename), "rb") as file:
+                map = pickle.load(file)
 
         return map
 
