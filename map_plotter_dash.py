@@ -1,3 +1,4 @@
+import os
 import osmnx as ox
 import dash
 import dash_leaflet as dl
@@ -59,14 +60,21 @@ class MapPlotter:
                             id="map",
                             center=[city_center.y[0], city_center.x[0]],
                             zoom=11,
-                            style={'height': '100vh', 'width': '100%', 'margin': 'none'})
+                            style={'height': '95vh', 'width': '100%', 'margin': 'none', "z-index": 0})
 
         app.layout = html.Div([
+                            html.Button(id="quit", children="Stop Server", style={"z-index": 5, "float": "right"}),
                             map
                             ])
 
         web_view.open_map_site(delay=1)
         app.run_server()
+
+
+    @app.callback(dash.Output("map", "zoom"), [dash.Input("quit", 'n_clicks')])
+    def stop_server(n):
+        os._exit(0)
+
 
     @ app.callback(dash.Output("container", "children"), [dash.Input("map", "click_lat_lng")], [dash.State("container", "children")])
     def add_marker(click_lat_lng, children):
