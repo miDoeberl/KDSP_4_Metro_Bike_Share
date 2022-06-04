@@ -5,6 +5,7 @@ import dash_leaflet.express as dlx
 from dash import html
 import pathlib
 import route_finder
+from threading import Lock
 
 app = dash.Dash(prevent_initial_callbacks=True)
 
@@ -18,6 +19,8 @@ route_state = SELECT_START_POINT
 start_bike_station = None
 end_bike_station = None
 
+mutex = Lock()
+
 class MapPlotter:
 
     def __init__(self, __config):
@@ -26,7 +29,7 @@ class MapPlotter:
         self.cache_directory = "data"
         self.cache_dir_path = pathlib.Path(__file__).parent / self.cache_directory
 
-    def plot_map(self, map, station_loader):
+    def plot_map(self, map, station_loader, web_view):
         global app, __map, __station_loader
         __map = map
         __station_loader = station_loader
@@ -56,16 +59,18 @@ class MapPlotter:
                             id="map",
                             center=[city_center.y[0], city_center.x[0]],
                             zoom=11,
-                            style={'height': '90vh'})
+                            style={'height': '100vh', 'width': '100%', 'margin': 'none'})
 
         app.layout = html.Div([
                             map
                             ])
 
+        web_view.open_map_site(delay=1)
         app.run_server()
 
     @ app.callback(dash.Output("container", "children"), [dash.Input("map", "click_lat_lng")], [dash.State("container", "children")])
     def add_marker(click_lat_lng, children):
+        mutex.acquire()
         global route_state, start_location, end_location, start_bike_station, end_bike_station
 
         if route_state != ROUTE_SELECTED:
@@ -77,6 +82,13 @@ class MapPlotter:
                 end_location = None
                 start_bike_station = None
                 end_bike_station = None
+                for i in reversed(range(len(children[:-1]))):
+                    child = children[i]
+                    if isinstance(child, dl.Marker) or \
+                       child["type"] == "CircleMarker" and "color" in child["props"] or \
+                       child["type"] == "Polyline" or \
+                       child["type"] == "Marker":
+                        del children[i]
 
             start_location = click_lat_lng
             route_state = SELECT_END_POINT
@@ -106,8 +118,6 @@ class MapPlotter:
                         break
                 children.append(dl.CircleMarker(center=[station[1].latitude, station[1].longitude], color="Orangered", opacity=1, fillOpacity=1, radius=4, children=tooltip))
 
-
-            return children
         elif route_state == SELECT_END_POINT:
             end_location = click_lat_lng
             route_state = SELECT_START_POINT
@@ -134,6 +144,5 @@ class MapPlotter:
             route = dl.Polyline(positions=route_finder.get_shortest_route(__map, end_bike_station, end_location), color="hotpink", weight=5)
             children.append(route)
 
-            return children
-
+        mutex.release()
         return children
