@@ -4,7 +4,6 @@ import dash
 import dash_leaflet as dl
 import dash_leaflet.express as dlx
 from dash import html
-import pathlib
 import route_finder
 from threading import Lock
 
@@ -32,7 +31,8 @@ class MapPlotter:
 
     def plot_map(self, map, station_loader, web_view):
         """
-        Blocking function that shows the map
+        Blocking function that draws an interactive map, on which bike station markers
+        as well as the calculated route can be seen and chosen.
         """
         global app, __map, __station_loader
         __map = map

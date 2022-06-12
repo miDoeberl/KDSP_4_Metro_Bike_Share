@@ -29,7 +29,7 @@ class MapLoader():
 
     def get_map(self):
         """
-        Returns a city street map in networkx.diGraph format
+        Returns a city street map in networkx.MultiDiGraph format
         """
         # Check if a map was already loaded
         if self.network_graph is None:
