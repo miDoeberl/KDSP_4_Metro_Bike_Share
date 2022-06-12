@@ -9,11 +9,13 @@ class StationStatusHandler:
     Provides bixi-bike station information through self.get_station_states(force_refresh=False)
     """
 
-    def __init__(self):
+    def __init__(self, config):
         self._url = "https://bikeshare.metro.net/stations/json/"
         self._station_states = None
+        # Set the last update time to long ago
         self._last_update = datetime.fromordinal(1)
-        self._station_update_time = 60
+        # Time in seconds the bike station information is cached
+        self._station_update_time = int(config["STATIONS"]["updateTime"])
 
     def _load_station_states(self):
         """
@@ -30,6 +32,7 @@ class StationStatusHandler:
         """
         cleaned_data = []
         for row in data:
+            # reversed(...) because the format from the json api is (longitude, latitude) and other apis use (lat, long)
             row["properties"]["location"] = list(reversed(row["geometry"]["coordinates"]))
             cleaned_data.append(row["properties"])
         frame = pd.DataFrame(cleaned_data)
@@ -40,9 +43,13 @@ class StationStatusHandler:
         Returns station statuses that are always younger than `self.station_update_time` seconds
         """
         current_time = datetime.now()
+        # If the cache validity time has passed
+        # or the stations have not yet been downloaded
+        # or a refresh is forced
         if (current_time - self._last_update).seconds >= self._station_update_time \
                 or self._station_states is None \
                 or force_refresh:
+            # Update the station statuses
             self._last_update = current_time
             self._station_states = self._json_to_dataframe(self._load_station_states())
 
